@@ -32,7 +32,7 @@ To make a local copy of the project, you will need to clone the repository to a 
 #### Step 4 - Create a new branch
 Git keeps track of all changes in *branches*. Each branch consists of a series of *commits*, a small change to the project. To ensure we have the freedom to make any changes we want without destroying the work of others, we create our own branches to work in.
 
-- In the command window, type: **git branch my-branch-name**. *my-branch-name* can be anything you like, include a name someone else has used. These branches only exist on your own computer until we *merge* or *push* them to the server. This means you can change, add to, and delete whatever you like without having to worry about the effects.
+- In the command window, type: **git checkout -b my-branch-name**. *my-branch-name* can be anything you like, include a name someone else has used. These branches only exist on your own computer until we *merge* or *push* them to the server. This means you can change, add to, and delete whatever you like without having to worry about the effects.
 
 #### Step 5 - Open the project in Visual Studio
 Open Visual Studio, find where you cloned the project files, and open it. You will have the following files in the Solution explorer:

@@ -28,5 +28,9 @@ _ReSharper*/
 *.vssscc
 $tf*/
 *.opensdf
+<<<<<<< HEAD
 *.sdf
 ipch/
+=======
+ipch/
+>>>>>>> dev-dan

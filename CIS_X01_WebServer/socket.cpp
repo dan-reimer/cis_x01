@@ -30,15 +30,11 @@ void Socket::_create_socket(int family, int socktype, int protocol) {
 
 Socket& Socket::connect(const std::string& host, int port) {
 
-	hostent *dest_host;
-	dest_host = gethostbyname(host.c_str());
-	if (!dest_host) _throw_ws_error("Could not get host!");
-
 	addrinfo hints, *result;
 	memset(&hints, 0, sizeof(addrinfo));
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
-	getaddrinfo("127.0.0.1", std::to_string(static_cast<long long>(port)).c_str(), &hints, &result);
+	getaddrinfo(host.c_str(), std::to_string(static_cast<long long>(port)).c_str(), &hints, &result);
 
 	_create_socket(result->ai_family, result->ai_socktype, result->ai_protocol);
 
@@ -53,10 +49,59 @@ Socket& Socket::connect(const std::string& host, int port) {
 
 	return *this;
 }
-Socket& Socket::close() {
-	closesocket(_socket);
+Socket& Socket::listen(const std::string& local_host, int port) {
+	addrinfo hints, *result;
+	memset(&hints, 0, sizeof(addrinfo));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
+	getaddrinfo(local_host == "" ? NULL : local_host.c_str(), std::to_string(static_cast<long long>(port)).c_str(), &hints, &result);
+
+	_create_socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+
+	if (::bind(_socket, result->ai_addr, result->ai_addrlen) < 0) {
+		_throw_ws_error("Error binding socket!");
+	}
+
+	if (::listen(_socket, 20) < 0) {
+		_throw_ws_error("Error listening on socket!");
+	}
+
+	_listening = true;
+
+	_src_host = local_host;
+	_src_port = port;
+
 	return *this;
 }
+Socket* Socket::accept() {
+	sockaddr remote_addr;
+	socklen_t addr_size;
+	Socket* socket;
+	SOCKET temp_sock;
+
+	addr_size = sizeof(remote_addr);
+	temp_sock = ::accept(_socket, &remote_addr, &addr_size);
+
+	socket = new Socket();
+	socket->_socket = temp_sock;
+	socket->_connected = true;
+
+	getpeername(temp_sock, &remote_addr, &addr_size);
+
+	char buffer[256];
+	struct sockaddr_in* sin = (struct sockaddr_in*)&remote_addr;
+	inet_ntop(sin->sin_family, &sin->sin_addr, buffer, sizeof(buffer));
+	socket->_dest_host = buffer;
+	socket->_dest_port = sin->sin_port;
+
+	return socket;
+}
+Socket& Socket::close() {
+	closesocket(_socket);
+	_connected = false;
+	return *this;
+}
+
 Socket& Socket::send(const void* data, int length) {
 	int sent = ::send(_socket, (const char*)data, length, 0);
 	if (sent == SOCKET_ERROR) {
@@ -74,12 +119,14 @@ Socket& Socket::recv(void* data, int max_length, int *actual_length) {
 	if (received < 0) _throw_ws_error("Error receiving data!");
 	if (received == 0) {
 		close();
-		_connected = false;
 	}
 
 	if (actual_length) *actual_length = received;
 
 	return *this;
+}
+Socket& Socket::send(const std::string& data) {
+	return this->send(data.c_str(), data.length());
 }
 bool Socket::data_available() {
 	fd_set readfds;
@@ -94,10 +141,17 @@ bool Socket::data_available() {
 	if (result < 0) _throw_ws_error("Error polling sockets!");
 	return result > 0;
 }
+
 bool Socket::connected() {
 	return _connected;
 }
+bool Socket::listening() {
+	return _listening;
+}
 
+const std::string& Socket::remote_host() {
+	return _dest_host;
+}
 
 
 Winsock::Winsock() {

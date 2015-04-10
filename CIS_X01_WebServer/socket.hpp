@@ -28,6 +28,7 @@ namespace X01 {
 
 		SOCKET _socket;
 		bool _connected;
+		bool _listening;
 
 		void _throw_ws_error(const std::string& error);
 		void _create_socket(int family, int socktype, int protocol);
@@ -39,13 +40,19 @@ namespace X01 {
 		static void shutdown();
 
 		Socket& connect(const std::string& host, int port);
+		Socket& listen(const std::string& local_host, int port);
+		Socket* accept();
 		Socket& close();
 
 		Socket& send(const void* data, int length);
 		Socket& recv(void* data, int max_length, int *actual_length);
+		Socket& send(const std::string& data);
 
 		bool data_available();
 		bool connected();
+		bool listening();
+
+		const std::string& remote_host();
 	};
 
 
